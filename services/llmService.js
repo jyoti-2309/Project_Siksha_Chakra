@@ -1,21 +1,19 @@
-const { OpenAI } = require('openai');
-require('dotenv').config();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+require("dotenv").config();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function buildPrompt(question, analogies, context = []) {
-  let prompt = `User asked: "${question}"\nAnalogies: ${analogies.join(', ')}\n`;
+  let prompt = `User asked: ${question}\nAnalogies: ${analogies.join(', ')}\n`;
 
   if (context.length) {
-    prompt += `\nPrevious context:\n`;
+    prompt += '\nPrevious context:\n';
     context.forEach((msg, i) => {
       prompt += `Q${i + 1}: ${msg.question}\nA${i + 1}: ${msg.answer}\n`;
     });
   }
 
-  prompt += `\nGenerate a short and to-the-point answer and two examples.`;
+  prompt += '\nGenerate a short and to-the-point answer and two examples.';
 
   return prompt;
 }
@@ -23,30 +21,26 @@ function buildPrompt(question, analogies, context = []) {
 exports.generateAnswer = async (question, analogies, context = []) => {
   const prompt = buildPrompt(question, analogies, context);
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7,
-  });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const content = response.choices[0].message.content;
+  const result = await model.generateContent(prompt);
+  const content = result.response.text();
 
   // Simple parsing logic (customize as needed)
-  const [answerPart, ...exampleParts] = content.split('\n').filter(Boolean);
+  const [answerPart, ...exampleParts] = content.split("\n").filter(Boolean);
   const examples = exampleParts.slice(0, 2);
 
   return {
     answer: answerPart.trim(),
-    examples: examples.map(e => e.trim()),
+    examples: examples.map((e) => e.trim()),
   };
 };
 
 async function getEmbedding(text) {
-  const response = await openai.embeddings.create({
-    model: 'text-embedding-ada-002',
-    input: text,
-  });
-  return response.data[0].embedding;
+  const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+
+  const result = await model.embedContent(text);
+  return result.embedding.values;
 }
 
 function cosineSimilarity(vecA, vecB) {
@@ -61,7 +55,7 @@ exports.isRelated = async (newQuestion, previousQuestions) => {
 
   const newEmbedding = await getEmbedding(newQuestion);
   const similarities = await Promise.all(
-    previousQuestions.map(async q => {
+    previousQuestions.map(async (q) => {
       const prevEmbedding = await getEmbedding(q);
       return cosineSimilarity(newEmbedding, prevEmbedding);
     })

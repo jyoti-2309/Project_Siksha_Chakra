@@ -9,10 +9,10 @@ const db = require('./db');
 
 app.use(express.json());
 
-app.use('/api/auth', require('./routes/authRoute'));
-app.use('/api/user', require('./routes/userRoute'));
-app.use('/api/chat', require('./routes/chatRoute'));
-app.use('/api/quiz', require('./routes/quizRoute'));
+app.use('/auth', require('./routes/authRoute'));
+app.use('/user', require('./routes/userRoute'));
+app.use('/chat', require('./routes/chatRoute'));
+app.use('/quiz', require('./routes/quizRoute'));
 
 const PORT = process.env.PORT;
 

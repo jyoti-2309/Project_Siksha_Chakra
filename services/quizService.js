@@ -1,9 +1,7 @@
-const { OpenAI } = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function buildQuizPrompt(messages) {
   let prompt = `Based on the following chat history, generate a quiz with 3 questions. Each question should have 4 options and indicate the correct answer.\n\n`;
@@ -20,13 +18,10 @@ function buildQuizPrompt(messages) {
 exports.generateQuiz = async (messages) => {
   const prompt = buildQuizPrompt(messages);
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4',
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.7,
-  });
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-  const content = response.choices[0].message.content;
+  const result = await model.generateContent(prompt);
+  const content = result.response.text();
 
   // Basic parsing (you can refine this)
   const quizItems = content.split(/\n(?=\d+\.\s)/).map(block => {

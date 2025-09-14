@@ -1,17 +1,16 @@
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const Chat = require('../models/chat');
 const llmService = require('../services/llmService');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-router.use(authMiddleware);
-
-router.post('/new', async (req, res) => {
-  const chat = await Chat.create({ userId: req.user._id, messages: [] });
+router.post('/new', authMiddleware, async (req, res) => {
+  const chat = await Chat.create({ userId: req.uid, messages: [] });
   res.json(chat);
 });
 
-router.post('/message', async (req, res) => {
+router.post('/message', authMiddleware, async (req, res) => {
   const { chatId, question, analogies } = req.body;
   const chat = await Chat.findById(chatId);
   if (!chat) return res.status(404).json({ error: 'Chat not found' });
@@ -33,7 +32,7 @@ router.post('/message', async (req, res) => {
   res.json(chat);
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   const chat = await Chat.findById(req.params.id).populate('quiz');
   if (!chat) return res.status(404).json({ error: 'Chat not found' });
   res.json(chat);
